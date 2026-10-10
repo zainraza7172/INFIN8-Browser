@@ -11,7 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout source
         uses: actions/checkout@v4
 
@@ -26,27 +25,33 @@ jobs:
         with:
           gradle-version: '9.6.0'
 
-      - name: Install Android SDK 37
+      - name: Install Android SDK 36
         shell: bash
         run: |
           SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
 
-          echo "Using SDK Manager:"
-          echo "$SDKMANAGER"
-
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
 
-          "$SDKMANAGER" --channel=3 \
+          "$SDKMANAGER" \
             "platform-tools" \
-            "platforms;android-37" \
+            "platforms;android-36" \
             "build-tools;36.0.0"
 
-      - name: Extract INFIN8 Browser Source
+      - name: Extract INFIN8 Browser
         run: |
+          rm -rf INFIN8Browser
           unzip -q INFIN8Browser-v0.1-source.zip
 
-          echo "Project extracted:"
+          echo "Project extracted"
           ls -la INFIN8Browser
+
+      - name: Change project to stable API 36
+        run: |
+          sed -i 's/compileSdk = 37/compileSdk = 36/' INFIN8Browser/app/build.gradle.kts
+          sed -i 's/targetSdk = 37/targetSdk = 36/' INFIN8Browser/app/build.gradle.kts
+
+          echo "Updated Gradle:"
+          cat INFIN8Browser/app/build.gradle.kts
 
       - name: Build Debug APK
         working-directory: INFIN8Browser
