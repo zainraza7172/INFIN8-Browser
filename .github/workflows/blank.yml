@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout source
         uses: actions/checkout@v4
 
@@ -29,21 +30,32 @@ jobs:
         shell: bash
         run: |
           SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
-          echo "Using: $SDKMANAGER"
+
+          echo "Using SDK Manager:"
+          echo "$SDKMANAGER"
 
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
 
-          "$SDKMANAGER" \
+          "$SDKMANAGER" --channel=3 \
             "platform-tools" \
             "platforms;android-37" \
-            "build-tools;37.0.0"
+            "build-tools;36.0.0"
+
+      - name: Extract INFIN8 Browser Source
+        run: |
+          unzip -q INFIN8Browser-v0.1-source.zip
+
+          echo "Project extracted:"
+          ls -la INFIN8Browser
 
       - name: Build Debug APK
-        run: gradle --no-daemon assembleDebug
+        working-directory: INFIN8Browser
+        run: |
+          gradle --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: INFIN8-Browser-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: INFIN8Browser/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
