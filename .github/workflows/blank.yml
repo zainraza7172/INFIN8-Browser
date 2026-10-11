@@ -1,4 +1,4 @@
-name: Build INFIN8 Browser v1.3 APK
+name: Build INFIN8 Browser v1.4 APK
 
 on:
   workflow_dispatch:
@@ -35,12 +35,12 @@ jobs:
             "platforms;android-36" \
             "build-tools;36.0.0"
 
-      - name: Extract INFIN8 Browser v1.3
+      - name: Extract INFIN8 Browser v1.4
         run: |
           rm -rf INFIN8Browser
-          unzip -q INFIN8Browser-v1.3-source.zip
+          unzip -q INFIN8Browser-v1.4-source.zip
           test -f INFIN8Browser/app/build.gradle.kts
-          echo "INFIN8 Browser v1.3 source extracted"
+          echo "INFIN8 Browser v1.4 source extracted"
 
       - name: Build Debug APK
         working-directory: INFIN8Browser
@@ -49,6 +49,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: INFIN8-Browser-v1.3-APK
+          name: INFIN8-Browser-v1.4-APK
           path: INFIN8Browser/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
