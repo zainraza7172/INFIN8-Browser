@@ -1,4 +1,4 @@
-name: Build INFIN8 Browser v2.0 APK
+name: Build INFIN8 Browser v2.4 APK + AAB
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Restore stable INFIN8 signing key
+      - name: Restore stable INFIN8 debug signing key
         uses: actions/cache@v4
         with:
           path: ~/.android/debug.keystore
@@ -41,20 +41,63 @@ jobs:
             "platforms;android-36" \
             "build-tools;36.0.0"
 
-      - name: Extract INFIN8 Browser v2.0
+      - name: Extract INFIN8 Browser v2.4
         run: |
           rm -rf INFIN8Browser
-          unzip -q INFIN8Browser-v2.0-source.zip
+          unzip -q INFIN8Browser-v2.4-source.zip
           test -f INFIN8Browser/app/build.gradle.kts
-          echo "INFIN8 Browser v2.0 source extracted"
+          echo "INFIN8 Browser v2.4 source extracted"
 
-      - name: Build Debug APK
+      - name: Prepare optional production signing key
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.INFIN8_RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.INFIN8_RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.INFIN8_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.INFIN8_RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/infin8-release.jks"
+            echo "INFIN8_KEYSTORE_PATH=$RUNNER_TEMP/infin8-release.jks" >> "$GITHUB_ENV"
+            echo "INFIN8_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "INFIN8_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "INFIN8_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "INFIN8_RELEASE_SIGNED=true" >> "$GITHUB_ENV"
+            echo "Production signing secrets detected"
+          else
+            echo "INFIN8_RELEASE_SIGNED=false" >> "$GITHUB_ENV"
+            echo "Production signing secrets are not fully configured; release outputs will remain unsigned"
+          fi
+
+      - name: Build test APK + release APK + release AAB
         working-directory: INFIN8Browser
-        run: gradle --no-daemon assembleDebug
+        run: gradle --no-daemon assembleDebug assembleRelease bundleRelease
 
-      - name: Upload APK
+      - name: Stage release outputs and checksums
+        shell: bash
+        run: |
+          mkdir -p release-out
+          cp INFIN8Browser/app/build/outputs/bundle/release/app-release.aab release-out/INFIN8-Browser-v2.4-release.aab
+          if [ -f INFIN8Browser/app/build/outputs/apk/release/app-release.apk ]; then
+            cp INFIN8Browser/app/build/outputs/apk/release/app-release.apk release-out/INFIN8-Browser-v2.4-release-signed.apk
+            echo "SIGNED=true" > release-out/signing-status.txt
+          else
+            cp INFIN8Browser/app/build/outputs/apk/release/app-release-unsigned.apk release-out/INFIN8-Browser-v2.4-release-unsigned.apk
+            echo "SIGNED=false" > release-out/signing-status.txt
+          fi
+          echo "GitHub secret signing requested: ${INFIN8_RELEASE_SIGNED:-false}" >> release-out/signing-status.txt
+          (cd release-out && sha256sum * > SHA256SUMS.txt)
+
+      - name: Upload installable test APK
         uses: actions/upload-artifact@v4
         with:
-          name: INFIN8-Browser-v2.0-APK
+          name: INFIN8-Browser-v2.4-APK
           path: INFIN8Browser/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload release APK + AAB + checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFIN8-Browser-v2.4-RELEASE
+          path: release-out/*
           if-no-files-found: error
