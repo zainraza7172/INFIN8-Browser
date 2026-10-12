@@ -1,4 +1,4 @@
-name: Build INFIN8 Browser v2.4 APK + AAB
+name: Build INFIN8 Browser v2.5 APK + AAB
 
 on:
   workflow_dispatch:
@@ -41,12 +41,12 @@ jobs:
             "platforms;android-36" \
             "build-tools;36.0.0"
 
-      - name: Extract INFIN8 Browser v2.4
+      - name: Extract INFIN8 Browser v2.5
         run: |
           rm -rf INFIN8Browser
-          unzip -q INFIN8Browser-v2.4-source.zip
+          unzip -q INFIN8Browser-v2.5-source.zip
           test -f INFIN8Browser/app/build.gradle.kts
-          echo "INFIN8 Browser v2.4 source extracted"
+          echo "INFIN8 Browser v2.5 source extracted"
 
       - name: Prepare optional production signing key
         shell: bash
@@ -77,12 +77,12 @@ jobs:
         shell: bash
         run: |
           mkdir -p release-out
-          cp INFIN8Browser/app/build/outputs/bundle/release/app-release.aab release-out/INFIN8-Browser-v2.4-release.aab
+          cp INFIN8Browser/app/build/outputs/bundle/release/app-release.aab release-out/INFIN8-Browser-v2.5-release.aab
           if [ -f INFIN8Browser/app/build/outputs/apk/release/app-release.apk ]; then
-            cp INFIN8Browser/app/build/outputs/apk/release/app-release.apk release-out/INFIN8-Browser-v2.4-release-signed.apk
+            cp INFIN8Browser/app/build/outputs/apk/release/app-release.apk release-out/INFIN8-Browser-v2.5-release-signed.apk
             echo "SIGNED=true" > release-out/signing-status.txt
           else
-            cp INFIN8Browser/app/build/outputs/apk/release/app-release-unsigned.apk release-out/INFIN8-Browser-v2.4-release-unsigned.apk
+            cp INFIN8Browser/app/build/outputs/apk/release/app-release-unsigned.apk release-out/INFIN8-Browser-v2.5-release-unsigned.apk
             echo "SIGNED=false" > release-out/signing-status.txt
           fi
           echo "GitHub secret signing requested: ${INFIN8_RELEASE_SIGNED:-false}" >> release-out/signing-status.txt
@@ -91,13 +91,13 @@ jobs:
       - name: Upload installable test APK
         uses: actions/upload-artifact@v4
         with:
-          name: INFIN8-Browser-v2.4-APK
+          name: INFIN8-Browser-v2.5-APK
           path: INFIN8Browser/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Upload release APK + AAB + checksums
         uses: actions/upload-artifact@v4
         with:
-          name: INFIN8-Browser-v2.4-RELEASE
+          name: INFIN8-Browser-v2.5-RELEASE
           path: release-out/*
           if-no-files-found: error
